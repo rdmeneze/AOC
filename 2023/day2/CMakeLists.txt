@@ -17,6 +17,12 @@ configure_file(	"${CMAKE_CURRENT_SOURCE_DIR}/HelloConfig.h.in"
 				@ONLY
 			)
 
-add_executable( day2 day2_1.cpp )
+add_executable( day2
+				day2_1.cpp
+				cube.cpp
+				cube.h
+        cubecounter.cpp
+        cubecounter.h
+)
 
 target_include_directories( day2 PUBLIC "${CMAKE_CURRENT_BINARY_DIR}" )
