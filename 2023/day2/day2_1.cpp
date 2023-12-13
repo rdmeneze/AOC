@@ -8,6 +8,7 @@
 #include <array>
 #include <vector>
 #include <sstream>
+#include <map>
 #include "cubecounter.h"
 
 std::vector<std::string> getBlocks(std::string_view play) {
@@ -48,10 +49,9 @@ struct Game {
     [[nodiscard]] std::string toString() const {
         std::ostringstream os;
         os << "ID: " << id << " " << "Plays: ";
-        os << "red: " << getCount("red") << " | " ;
-        os << "green: " << getCount("green") << " | ";
-        os << "blue: " << getCount("blue");
-
+        for( auto& cubeCounter : counters) {
+            os << cubeCounter.getType() << " | " << cubeCounter.getCounter() << " | ";
+        }
         return os.str();
     }
 
@@ -92,6 +92,12 @@ struct Game {
             counters.push_back(counter);
         }
     }
+
+    void insert( const std::string_view type, const size_t count ) {
+        CubeCounter counter(type);
+        counter.addCounter(count);
+        counters.push_back(counter);
+    }
 };
 
 Game parseGame( std::string_view game ) {
@@ -120,7 +126,7 @@ Game parseGame( std::string_view game ) {
     for( auto& block : blocks ) {
         auto counter = getCubeCounters(block);
         for(auto& cube : counter) {
-            gameData.update(cube.getType(), cube.getCounter());
+            gameData.insert(cube.getType(), cube.getCounter());
         }
     }
 
@@ -139,10 +145,15 @@ static std::string& readLine( std::ifstream& fin ){
 }
 
 
-int main(void){
+int main(int argc, char** argv){
     std::cout << "Advent of Code - day two \n";
-    constexpr std::string_view fileName = "input_1.txt";
-    std::ifstream inFile(fileName.data());
+
+    if( argc != 2 ) {
+        return 0;
+    }
+
+    std::string fileName = argv[1];
+    std::ifstream inFile(fileName);
     std::vector<Game> board;
 
     while( !inFile.eof() ) {
@@ -157,16 +168,25 @@ int main(void){
     std::cout << "===============================================\n";
 
     // apply the restrictions
-    constexpr size_t red_limit = 12;
-    constexpr size_t green_limit = 13;
-    constexpr size_t blue_limit = 14;
+    std::map<std::string, size_t> limits{
+    {"red", 12},
+    {"green", 13},
+    {"blue", 14},
+    };
 
     size_t gameCount = 0;
     for( auto& game : board) {
-        if(game.getCount("red") <= red_limit
-            && game.getCount("green") <= green_limit
-            && game.getCount("blue") <= blue_limit ) {
-            std::cout << "game: " << game.toString() << "\n";
+        bool consider = true;
+
+        for( auto& cubeCounter : game.counters ) {
+            auto n = cubeCounter.getCounter();
+            auto c = cubeCounter.getType();
+
+            if(n > limits[c]) {
+                consider = false;
+            }
+        }
+        if( consider) {
             gameCount += game.id;
         }
     }
