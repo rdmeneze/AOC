@@ -48,11 +48,24 @@ struct Game {
     [[nodiscard]] std::string toString() const {
         std::ostringstream os;
         os << "ID: " << id << " " << "Plays: ";
-        for(auto& counter : counters) {
-            os << counter.getType() << "-" << counter.getCounter() << " ";
-        }
+        os << "red: " << getCount("red") << " | " ;
+        os << "green: " << getCount("green") << " | ";
+        os << "blue: " << getCount("blue");
 
         return os.str();
+    }
+
+    [[nodiscard]] size_t getCount(std::string_view type) const {
+        size_t ret = 0;
+        if(exist(type)) {
+            for(auto& counter : counters) {
+                if(counter.getType() == type) {
+                    ret = counter.getCounter();
+                    break;
+                }
+            }
+        }
+        return ret;
     }
 
     [[nodiscard]] bool exist(const std::string_view type) const {
@@ -130,13 +143,35 @@ int main(void){
     std::cout << "Advent of Code - day two \n";
     constexpr std::string_view fileName = "input_1.txt";
     std::ifstream inFile(fileName.data());
+    std::vector<Game> board;
 
     while( !inFile.eof() ) {
         std::string line = readLine(inFile);
 
         Game game = parseGame(line);
         std::cout << "Game data: " << game.toString() << "\n";
+
+        board.push_back(game);
     }
+
+    std::cout << "===============================================\n";
+
+    // apply the restrictions
+    constexpr size_t red_limit = 12;
+    constexpr size_t green_limit = 13;
+    constexpr size_t blue_limit = 14;
+
+    size_t gameCount = 0;
+    for( auto& game : board) {
+        if(game.getCount("red") <= red_limit
+            && game.getCount("green") <= green_limit
+            && game.getCount("blue") <= blue_limit ) {
+            std::cout << "game: " << game.toString() << "\n";
+            gameCount += game.id;
+        }
+    }
+
+    std::cout << "Sum Game ID: " << gameCount << "\n";
 
     return 0;
 }
