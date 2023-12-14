@@ -36,12 +36,12 @@ public:
 
     void addWinningNumber( const size_t number ) {
         winningNumbers.push_back(number);
-        validate();
+        evaluate();
     }
 
     void addMyNumber( const size_t number ) {
         myNumbers.push_back(number);
-        validate();
+        evaluate();
     }
 
     [[nodiscard]] size_t getId() const {return id;}
@@ -156,9 +156,8 @@ private:
     std::vector<std::uint32_t> winningNumbers;
     std::vector<std::uint32_t> myNumbers;
 
-    void validate() {
+    void evaluate() {
         std::sort(winningNumbers.begin(), winningNumbers.end());
-        std::sort(myNumbers.begin(), myNumbers.end());
 
         auto verify_number = [&](const int num) {
             return std::binary_search(winningNumbers.begin(), winningNumbers.end(), num);
@@ -175,12 +174,12 @@ private:
 int main(const int argc, const char** argv){
     std::cout << "Advent of Code: day4\n";
 
-    std::vector<std::string> fileMirror{};
     if (argc != 2){
         std::cerr << "usage error\n";
         return 1;
     }
 
+    std::vector<std::string> fileMirror{};
     if( readFile(argv[1], fileMirror) == false ){
         return 1;
     }
