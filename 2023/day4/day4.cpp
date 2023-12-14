@@ -10,8 +10,7 @@
 #include <numeric>
 #include <sstream>
 #include <exception>
-
-
+#include <iomanip>
 
 static bool readFile(const std::string& fileName, std::vector<std::string>& lines){
     std::ifstream in{fileName};
@@ -52,15 +51,15 @@ public:
 
     [[nodiscard]] std::string toString() const {
         std::ostringstream os;
-        os << "ID: " << id << " - ";
-        os << "hits: " << hits << " - ";
-        os << "points: " << static_cast<uint32_t>(points) << " ";
+        os << "ID: " << std::setw(4) << id << " - ";
+        os << "hits: " << std::setw(4) << hits << " - ";
+        os << "points: " << std::setw(4) << static_cast<uint32_t>(points) << " ";
         for(auto& num: winningNumbers) {
-            os << num << " ";
+            os << std::setw(2) << num << " ";
         }
         os << "| ";
         for(auto& num: myNumbers) {
-            os << num << " ";
+            os << std::setw(2) << num << " ";
         }
 
         return os.str();
