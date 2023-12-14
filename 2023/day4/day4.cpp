@@ -110,11 +110,11 @@ public:
                         separator = true;
                     }
                     else {
-                        card.addWinningNumber( std::stol(x.c_str()));
+                        card.addWinningNumber(std::stol(x));
                     }
                 }
                 else {
-                    card.addMyNumber(std::stol(x.c_str()));
+                    card.addMyNumber(std::stol(x));
                 }
             }
         }
