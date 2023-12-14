@@ -5,12 +5,11 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
-#include <array>
 #include <cstdint>
-#include <map>
 #include <algorithm>
 #include <numeric>
 #include <sstream>
+#include <exception>
 
 
 
@@ -31,26 +30,40 @@ static bool readFile(const std::string& fileName, std::vector<std::string>& line
     return true;
 }
 
-//using Card = std::array<std::vector<std::string>, 2> ;
-
 class Card {
 public:
     explicit Card(int id): id(id) {}
 
     void addWinningNumber( const size_t number ) {
         winningNumbers.push_back(number);
-        points = validate();
+        validate();
     }
 
     void addMyNumber( const size_t number ) {
         myNumbers.push_back(number);
-        points = validate();
+        validate();
     }
 
     [[nodiscard]] size_t getId() const {return id;}
 
     [[nodiscard]] size_t getPoints() const {
         return points;
+    }
+
+    [[nodiscard]] std::string toString() const {
+        std::ostringstream os;
+        os << "ID: " << id << " - ";
+        os << "hits: " << hits << " - ";
+        os << "points: " << static_cast<uint32_t>(points) << " ";
+        for(auto& num: winningNumbers) {
+            os << num << " ";
+        }
+        os << "| ";
+        for(auto& num: myNumbers) {
+            os << num << " ";
+        }
+
+        return os.str();
     }
 
     static Card parse(const std::string &line) {
@@ -60,25 +73,77 @@ public:
 
         ss >> x;
         if (x != "Card") {
-            return Card{-1};
+            throw std::domain_error("Invalid header tag");
         }
 
-        ss >> id;
+        ss >> x;
+
+        try {
+            id = std::stol(x);
+        }
+        catch(...) {
+            throw std::domain_error("Invalid ID tag");
+        }
+
         Card card(id);
-        ss.ignore(1);
+
+        bool colon_exist = false;
+        if(x[x.length()-1] == ':') {
+            colon_exist = true;
+        }
+
+        if(colon_exist == false) {
+            ss >> x;
+            if (x == ":")
+                colon_exist = true;
+        }
+
+        if ( colon_exist == false ) {
+            throw std::domain_error("Invalid file format. Separator \':\' is missing");
+        }
+
         bool separator = false;
-        while(ss >> x) {
-            if(separator == false) {
-                if( x == "|") {
-                    separator = true;
+        try {
+            while(ss >> x) {
+                if(separator == false) {
+                    if( x == "|") {
+                        separator = true;
+                    }
+                    else {
+                        card.addWinningNumber( std::stol(x.c_str()));
+                    }
                 }
                 else {
-                    card.addWinningNumber(std::atoi(x.c_str()));
+                    card.addMyNumber(std::stol(x.c_str()));
                 }
             }
-            else {
-                card.addMyNumber(std::atoi(x.c_str()));
-            }
+        }
+        catch(const std::invalid_argument& e) {
+            std::ostringstream oss;
+            if(separator == false)
+                oss << "Invalid winning number value: '";
+            else
+                oss << "Invalid card number value: '";
+            oss << x;
+            oss << "'";
+            throw std::domain_error(oss.str());
+        }
+        catch (const std::out_of_range& e) {
+            std::ostringstream oss;
+            if(separator == false)
+                oss << "winning number out of value range: '";
+            else
+                oss << "card number out of value range: '";
+            oss << x;
+            oss << "'";
+            throw std::domain_error(oss.str());
+        }
+        catch(...) {
+            throw std::domain_error("unknown error");
+        }
+
+        if(separator == false) {
+            throw std::domain_error("Invalid file format. Separator \'|\' is missing");
         }
 
         return card;
@@ -87,26 +152,27 @@ public:
 private:
     int id;
     size_t points{0};
+    size_t hits{0};
     std::vector<std::uint32_t> winningNumbers;
     std::vector<std::uint32_t> myNumbers;
 
-    size_t validate() {
+    void validate() {
         std::sort(winningNumbers.begin(), winningNumbers.end());
         std::sort(myNumbers.begin(), myNumbers.end());
 
-        auto verify_number = [&](int num) {
+        auto verify_number = [&](const int num) {
             return std::binary_search(winningNumbers.begin(), winningNumbers.end(), num);
         };
 
-        size_t count = std::count_if(myNumbers.begin(),
-            myNumbers.end(), verify_number);
+        const size_t count = std::count_if(myNumbers.begin(), myNumbers.end(), verify_number);
 
-        return (1<<(count - 1));
+        hits = count;
+        points = (hits == 0) ? 0 : 1 << (hits - 1);
     }
 };
 
 
-int main(int argc, char** argv){
+int main(const int argc, const char** argv){
     std::cout << "Advent of Code: day4\n";
 
     std::vector<std::string> fileMirror{};
@@ -121,23 +187,25 @@ int main(int argc, char** argv){
 
     std::vector<Card> cardList{};
     for( auto&line: fileMirror) {
-        Card card = Card::parse(line);
-        if(card.getId() == -1) {
-            std::cerr << "error reading cards file\n";
+        try {
+            Card card = Card::parse(line);
+
+            std::cout << card.toString() << "\n";
+            cardList.push_back(card);
+        }
+        catch( const std::exception& e ) {
+            std::cerr << e.what() << "\n";
             return 1;
         }
-        cardList.push_back(card);
     }
 
-    int64_t totalPoints = 0;
-    /*std::accumulate(cardList.begin(),
+    std::cout << "number of cards: " << cardList.size() << "\n";
+
+    uint32_t totalPoints = 0;
+    totalPoints = std::accumulate(cardList.begin(),
         cardList.end(),
         0,
-        [](int64_t sum, const Card& card) {return sum + (int64_t)card.getPoints();});
-*/
-    for(auto& card: cardList) {
-        totalPoints += static_cast<int64_t>(card.getPoints());
-    }
+        [](const uint32_t sum, const Card& card) {return sum + card.getPoints();});
 
     std::cout << "points: " << totalPoints << "\n";
 
